@@ -1,0 +1,57 @@
+{{- /* Rendered per composition so the detail page can read the chart architecture through
+       snowplow /call under the caller's own RBAC. Edit data.architecture; the composer owns the rest. */}}
+{{- $g := .Values.global | default dict }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-architecture" ($g.compositionName | default .Release.Name) }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    krateo.io/architecture: "bp-v2-20261002-1"
+data:
+  architecture: |
+    apiVersion: architecture.krateo.io/v1alpha1
+    kind: ChartArchitecture
+    chart: bp-v2-20261002-1
+    resources:
+      - id: deployment
+        class: native
+        apiVersion: apps/v1
+        kind: Deployment
+        template: templates/deployment.yaml
+        name: printf "%s-deployment" $.Release.Name | trunc 63 | trimSuffix "-"
+        dependsOn:
+          - ref: repository
+            ready: true
+          - ref: awsrdsstack
+            ready: true
+      - id: repository
+        class: custom
+        apiVersion: github.krateo.io/v2022-11-28
+        kind: Repository
+        template: templates/repository.yaml
+        name: printf "%s-repository" $.Release.Name | trunc 63 | trimSuffix "-"
+        readyWhen: .status.default_branch
+      - id: awsrdsstack
+        class: composition
+        apiVersion: composition.krateo.io/v0-3-0
+        kind: AwsRdsStack
+        template: templates/awsrdsstack.yaml
+        name: printf "%s-awsrdsstack" $.Release.Name | trunc 63 | trimSuffix "-"
+{{- /* krateo:graph begin — generated from data.architecture; edit the descriptor, not this block. */}}
+{{- $v := .Values.AsMap }}
+{{- $nodes := list }}
+{{- $names := list }}
+{{- $present := true }}
+{{- $names = append $names (printf "%s-deployment" $.Release.Name | trunc 63 | trimSuffix "-") }}
+{{- $nodes = append $nodes (dict "id" "deployment" "apiVersion" "apps/v1" "kind" "Deployment" "class" "native" "level" 1 "forEach" false "present" $present "names" $names "dependsOn" (list (dict "ref" "repository" "ready" true "all" false "active" true) (dict "ref" "awsrdsstack" "ready" true "all" false "active" true))) }}
+{{- $names = list }}
+{{- $present = true }}
+{{- $names = append $names (printf "%s-repository" $.Release.Name | trunc 63 | trimSuffix "-") }}
+{{- $nodes = append $nodes (dict "id" "repository" "apiVersion" "github.krateo.io/v2022-11-28" "kind" "Repository" "class" "custom" "level" 0 "readyWhen" ".status.default_branch" "forEach" false "present" $present "names" $names "dependsOn" (list)) }}
+{{- $names = list }}
+{{- $present = true }}
+{{- $names = append $names (printf "%s-awsrdsstack" $.Release.Name | trunc 63 | trimSuffix "-") }}
+{{- $nodes = append $nodes (dict "id" "awsrdsstack" "apiVersion" "composition.krateo.io/v0-3-0" "kind" "AwsRdsStack" "class" "composition" "level" 0 "forEach" false "present" $present "names" $names "dependsOn" (list)) }}
+  graph: {{ dict "v" 1 "chart" "bp-v2-20261002-1" "states" (list "level-0" "level-1") "composition" (dict "apiVersion" ($g.compositionApiVersion | default "") "resource" ($g.compositionResource | default "") "name" ($g.compositionName | default "") "namespace" .Release.Namespace "uid" ($g.compositionId | default "")) "nodes" $nodes | toJson | quote }}
+{{- /* krateo:graph end */}}
