@@ -1,0 +1,46 @@
+{{- /* krateo:gate begin — generated from architecture.yaml; edit the descriptor, not this block. */}}
+{{- $gate := true -}}
+{{- $dep0 := lookup "github.krateo.io/v2022-11-28" "Repository" $.Release.Namespace (printf "%s-repository" $.Release.Name | trunc 63 | trimSuffix "-") -}}
+{{- if not (and $dep0 (dig "status" "default_branch" "" $dep0)) -}}{{- $gate = false -}}{{- end -}}
+{{- $dep1 := lookup "composition.krateo.io/v0-3-0" "AwsRdsStack" $.Release.Namespace (printf "%s-awsrdsstack" $.Release.Name | trunc 63 | trimSuffix "-") -}}
+{{- $ok1Ready := false -}}
+{{- range (dig "status" "conditions" (list) $dep1) -}}{{- if and (eq (toString .type) "Ready") (eq (toString .status) "True") -}}{{- $ok1Ready = true -}}{{- end -}}{{- end -}}
+{{- if not $ok1Ready -}}{{- $gate = false -}}{{- end -}}
+{{- $ok1Synced := false -}}
+{{- range (dig "status" "conditions" (list) $dep1) -}}{{- if and (eq (toString .type) "Synced") (eq (toString .status) "True") -}}{{- $ok1Synced = true -}}{{- end -}}{{- end -}}
+{{- if not $ok1Synced -}}{{- $gate = false -}}{{- end -}}
+{{- if $gate }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-deployment" $.Release.Name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ printf "%s-deployment" $.Release.Name | trunc 63 | trimSuffix "-" }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ printf "%s-deployment" $.Release.Name | trunc 63 | trimSuffix "-" }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: main
+          image: ghcr.io/krateo-platformops/catalog-service:1.0.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+{{- end }}
+{{- /* krateo:gate end */}}
