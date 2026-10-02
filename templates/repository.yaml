@@ -1,0 +1,10 @@
+apiVersion: github.krateo.io/v2022-11-28
+kind: Repository
+metadata:
+  name: {{ printf "%s-repository" $.Release.Name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  configurationRef:
+    name: github-blueprints-config
+  name: ""
+  org: ""
